@@ -20,15 +20,33 @@ const client = new MongoClient(uri, {
 const run = async () => {
     try {
         await client.connect();
-        const productsCollection = client.db('emaJohn').collection('products')
+        const productsCollection = client.db('emaJohn').collection('products');
 
+        // get all products
         app.get('/products', async (req, res) => {
+            const page = parseInt(req.query.page);
+            const quantity = parseInt(req.query.quantity);
+
             const query = {};
             const cursor = productsCollection.find(query);
-            const products = await cursor.toArray();
 
-            res.send(products)
-        })
+            let products;
+            if (page || quantity) {
+                products = await cursor.skip(page*quantity).limit(quantity).toArray();
+            } else {
+                products = await cursor.toArray();
+            }
+
+            res.send(products);
+        });
+
+        // get products count
+        app.get('/productsCount', async (req, res) => {
+            const productsCount =
+                await productsCollection.estimatedDocumentCount();
+
+            res.send({ productsCount });
+        });
     } finally {
     }
 };
