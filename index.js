@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // connect mongoDB
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.b7sdn.mongodb.net/myFirstDatabase?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
     useNewUrlParser: true,
@@ -22,7 +22,7 @@ const run = async () => {
         await client.connect();
         const productsCollection = client.db('emaJohn').collection('products');
 
-        // get all products
+        // load all products
         app.get('/products', async (req, res) => {
             const page = parseInt(req.query.page);
             const quantity = parseInt(req.query.quantity);
@@ -40,13 +40,24 @@ const run = async () => {
             res.send(products);
         });
 
-        // get products count
+        // load products count
         app.get('/productsCount', async (req, res) => {
             const productsCount =
                 await productsCollection.estimatedDocumentCount();
 
             res.send({ productsCount });
         });
+
+        // get products by keys 
+        app.post('/productsByKeys', async (req, res) => {
+            const keys = req.body;
+            const IDs = keys.map(id => ObjectId(id))
+            const query = {_id: {$in: IDs}}
+            const cursor = productsCollection.find(query);
+            const result = await cursor.toArray();
+            console.log(keys)
+            res.send(result)
+        })
     } finally {
     }
 };
